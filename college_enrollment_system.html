@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>College Enrollment System — Relational Database Design</title>
+<style>
+  :root{
+    --navy:#1a3a5c;
+    --navy-dark:#12283f;
+    --blue:#2c5f8a;
+    --ink:#1f2937;
+    --muted:#5b6472;
+    --line:#d7dce2;
+    --paper:#f6f4ee;
+    --card:#ffffff;
+    --accent:#b5652e;
+    --code-bg:#12283f;
+    --code-text:#e7ecf3;
+    --key:#c99a2e;
+    --fk:#5b7fa6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Iowan Old Style","Georgia",serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:56px 32px 100px;}
+
+  header.hero{
+    border-bottom:2px solid var(--navy);
+    padding-bottom:28px;
+    margin-bottom:48px;
+  }
+  .kicker{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:13px;
+    letter-spacing:.04em;
+    color:var(--accent);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:clamp(28px,4vw,42px);
+    font-weight:700;
+    color:var(--navy-dark);
+    margin:0 0 14px;
+    letter-spacing:-0.01em;
+  }
+  .lede{
+    font-size:17px;
+    color:var(--muted);
+    max-width:70ch;
+    margin:0;
+  }
+
+  h2{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:22px;
+    color:var(--navy-dark);
+    margin:0 0 6px;
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+  }
+  h2 .num{
+    font-size:15px;
+    color:var(--accent);
+    font-weight:700;
+  }
+  .section-intro{
+    color:var(--muted);
+    font-size:15.5px;
+    max-width:75ch;
+    margin:0 0 26px;
+  }
+  section{margin-bottom:64px;}
+
+  /* ---------- ERD ---------- */
+  .erd-frame{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:20px;
+    overflow-x:auto;
+  }
+  .erd-frame svg{display:block;min-width:1080px;}
+  .legend{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:12.5px;
+    color:var(--muted);
+    display:flex;
+    gap:22px;
+    flex-wrap:wrap;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+  }
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .legend .dot{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  /* ---------- SQL SCHEMA ---------- */
+  .schema-grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:22px;
+  }
+  .tbl-card{
+    background:var(--code-bg);
+    border-radius:6px;
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(0,0,0,.08);
+  }
+  .tbl-card .tbl-head{
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:13px;
+    letter-spacing:.03em;
+    color:#9fb3cc;
+    background:#0d1f33;
+    padding:9px 18px;
+    border-bottom:1px solid #24405e;
+  }
+  .tbl-card pre{
+    margin:0;
+    padding:16px 20px 20px;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    font-size:13.5px;
+    line-height:1.65;
+    color:var(--code-text);
+    overflow-x:auto;
+  }
+  .kw{color:#7fb0e0;}
+  .type{color:#e0a75e;}
+  .str{color:#8fd19e;}
+  .cmt{color:#7a8ba3;font-style:italic;}
+  .pk-note{color:#f0c674;}
+
+  /* ---------- attribute reference tables ---------- */
+  table.ref{
+    width:100%;
+    border-collapse:collapse;
+    background:var(--card);
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:13.5px;
+  }
+  table.ref caption{
+    text-align:left;
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-weight:700;
+    color:var(--navy-dark);
+    padding:10px 14px;
+    background:var(--navy);
+    color:#fff;
+    caption-side:top;
+    font-size:13px;
+    letter-spacing:.02em;
+  }
+  table.ref th, table.ref td{
+    padding:8px 14px;
+    text-align:left;
+    border-bottom:1px solid var(--line);
+  }
+  table.ref th{
+    color:var(--muted);
+    font-weight:600;
+    font-size:12px;
+    letter-spacing:.03em;
+  }
+  table.ref tr:last-child td{border-bottom:none;}
+  .badge{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:700;
+    padding:1px 6px;
+    border-radius:3px;
+    letter-spacing:.02em;
+  }
+  .badge.pk{background:#f4e2b0;color:#7a5b12;}
+  .badge.fk{background:#dbe6f2;color:#2c5f8a;}
+  .badge.nn{background:#e7e9ec;color:#4b5563;}
+  .ref-wrap{margin-bottom:20px;border:1px solid var(--line);border-radius:6px;overflow:hidden;}
+
+  details.attr-toggle{margin-top:8px;}
+  details.attr-toggle > summary{
+    cursor:pointer;
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:13px;
+    color:var(--blue);
+    margin-bottom:14px;
+  }
+
+  footer{
+    border-top:1px solid var(--line);
+    margin-top:40px;
+    padding-top:20px;
+    font-family:"Helvetica Neue",Arial,sans-serif;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <p class="kicker">Database Design Assignment</p>
+    <h1>College Enrollment System</h1>
+    <p class="lede">A relational database design covering departments, academic programs, instructors, courses, course offerings, students and enrollments — presented as an entity-relationship diagram and as SQL DDL with appropriate data types.</p>
+  </header>
+
+  <section id="erd">
+    <h2><span class="num">01</span> Entity-Relationship Diagram</h2>
+    <p class="section-intro">Nine entities model the enrollment domain. Lines connect each primary key to the foreign key that references it; the circle marks the "many" side of each one-to-many relationship.</p>
+
+    <div class="erd-frame">
+      <svg viewBox="0 0 1260 620" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica Neue, Arial, sans-serif">
+        <defs>
+          <marker id="crow" markerWidth="10" markerHeight="10" refX="5" refY="5">
+            <circle cx="5" cy="5" r="3.4" fill="#ffffff" stroke="#8a97a8" stroke-width="1.3"/>
+          </marker>
+        </defs>
+
+        <!-- ===== connectors (drawn first, behind boxes) ===== -->
+        <g fill="none" stroke="#a9b3c1" stroke-width="1.4">
+          <!-- department -> program -->
+          <path d="M290,86 C315,86 315,99 340,99" marker-end="url(#crow)"/>
+          <!-- department -> instructor -->
+          <path d="M290,86 C310,86 310,282 340,282" marker-end="url(#crow)"/>
+          <!-- department -> course -->
+          <path d="M290,86 C305,86 305,482 340,482" marker-end="url(#crow)"/>
+          <!-- program -> student -->
+          <path d="M600,99 C625,99 625,138 650,138" marker-end="url(#crow)"/>
+          <!-- semester -> course_offering -->
+          <path d="M290,249 C420,249 420,360 650,360" marker-end="url(#crow)"/>
+          <!-- instructor -> course_offering -->
+          <path d="M600,282 C630,282 630,330 650,330" marker-end="url(#crow)"/>
+          <!-- course -> course_offering -->
+          <path d="M600,482 C630,482 630,410 650,410" marker-end="url(#crow)"/>
+          <!-- student -> enrollment -->
+          <path d="M910,138 C935,138 935,90 960,90" marker-end="url(#crow)"/>
+          <!-- course_offering -> enrollment -->
+          <path d="M910,385 C945,385 945,140 960,140" marker-end="url(#crow)"/>
+        </g>
+
+        <!-- ===== ENTITY: department ===== -->
+        <g>
+          <rect x="30" y="30" width="260" height="112" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="30" y="30" width="260" height="30" fill="#1a3a5c"/>
+          <text x="44" y="50" fill="#fff" font-size="13.5" font-weight="700">department</text>
+          <line x1="30" y1="60" x2="290" y2="60" stroke="#e3e7eb"/>
+          <text x="44" y="78" font-size="12.5" font-weight="700">department_id 🔑</text><text x="276" y="78" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="30" y1="86" x2="290" y2="86" stroke="#f0f2f4"/>
+          <text x="44" y="104" font-size="12.5">department_name</text><text x="276" y="104" font-size="12" text-anchor="end" fill="#5b6472">varchar(100) NN</text>
+          <line x1="30" y1="112" x2="290" y2="112" stroke="#f0f2f4"/>
+          <text x="44" y="130" font-size="12.5">building_code</text><text x="276" y="130" font-size="12" text-anchor="end" fill="#5b6472">varchar(10)</text>
+        </g>
+
+        <!-- ===== ENTITY: semester ===== -->
+        <g>
+          <rect x="30" y="180" width="260" height="138" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="30" y="180" width="260" height="30" fill="#1a3a5c"/>
+          <text x="44" y="200" fill="#fff" font-size="13.5" font-weight="700">semester</text>
+          <line x1="30" y1="210" x2="290" y2="210" stroke="#e3e7eb"/>
+          <text x="44" y="228" font-size="12.5" font-weight="700">semester_id 🔑</text><text x="276" y="228" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="30" y1="236" x2="290" y2="236" stroke="#f0f2f4"/>
+          <text x="44" y="254" font-size="12.5">semester_name</text><text x="276" y="254" font-size="12" text-anchor="end" fill="#5b6472">varchar(20) NN</text>
+          <line x1="30" y1="262" x2="290" y2="262" stroke="#f0f2f4"/>
+          <text x="44" y="280" font-size="12.5">start_date</text><text x="276" y="280" font-size="12" text-anchor="end" fill="#5b6472">date NN</text>
+          <line x1="30" y1="288" x2="290" y2="288" stroke="#f0f2f4"/>
+          <text x="44" y="306" font-size="12.5">end_date</text><text x="276" y="306" font-size="12" text-anchor="end" fill="#5b6472">date NN</text>
+        </g>
+
+        <!-- ===== ENTITY: program ===== -->
+        <g>
+          <rect x="340" y="30" width="260" height="138" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="340" y="30" width="260" height="30" fill="#1a3a5c"/>
+          <text x="354" y="50" fill="#fff" font-size="13.5" font-weight="700">program</text>
+          <line x1="340" y1="60" x2="600" y2="60" stroke="#e3e7eb"/>
+          <text x="354" y="78" font-size="12.5" font-weight="700">program_id 🔑</text><text x="586" y="78" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="340" y1="86" x2="600" y2="86" stroke="#f0f2f4"/>
+          <text x="354" y="104" font-size="12.5">program_name</text><text x="586" y="104" font-size="12" text-anchor="end" fill="#5b6472">varchar(100) NN</text>
+          <line x1="340" y1="112" x2="600" y2="112" stroke="#f0f2f4"/>
+          <text x="354" y="130" font-size="12.5">degree_type</text><text x="586" y="130" font-size="12" text-anchor="end" fill="#5b6472">varchar(20)</text>
+          <line x1="340" y1="138" x2="600" y2="138" stroke="#f0f2f4"/>
+          <text x="354" y="156" font-size="12.5" fill="#2c5f8a">department_id 🔗</text><text x="586" y="156" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+        </g>
+
+        <!-- ===== ENTITY: instructor ===== -->
+        <g>
+          <rect x="340" y="200" width="260" height="164" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="340" y="200" width="260" height="30" fill="#1a3a5c"/>
+          <text x="354" y="220" fill="#fff" font-size="13.5" font-weight="700">instructor</text>
+          <line x1="340" y1="230" x2="600" y2="230" stroke="#e3e7eb"/>
+          <text x="354" y="248" font-size="12.5" font-weight="700">instructor_id 🔑</text><text x="586" y="248" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="340" y1="256" x2="600" y2="256" stroke="#f0f2f4"/>
+          <text x="354" y="274" font-size="12.5">first_name</text><text x="586" y="274" font-size="12" text-anchor="end" fill="#5b6472">varchar(50) NN</text>
+          <line x1="340" y1="282" x2="600" y2="282" stroke="#f0f2f4"/>
+          <text x="354" y="300" font-size="12.5">last_name</text><text x="586" y="300" font-size="12" text-anchor="end" fill="#5b6472">varchar(50) NN</text>
+          <line x1="340" y1="308" x2="600" y2="308" stroke="#f0f2f4"/>
+          <text x="354" y="326" font-size="12.5">email</text><text x="586" y="326" font-size="12" text-anchor="end" fill="#5b6472">varchar(100) NN</text>
+          <line x1="340" y1="334" x2="600" y2="334" stroke="#f0f2f4"/>
+          <text x="354" y="352" font-size="12.5" fill="#2c5f8a">department_id 🔗</text><text x="586" y="352" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+        </g>
+
+        <!-- ===== ENTITY: course ===== -->
+        <g>
+          <rect x="340" y="400" width="260" height="164" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="340" y="400" width="260" height="30" fill="#1a3a5c"/>
+          <text x="354" y="420" fill="#fff" font-size="13.5" font-weight="700">course</text>
+          <line x1="340" y1="430" x2="600" y2="430" stroke="#e3e7eb"/>
+          <text x="354" y="448" font-size="12.5" font-weight="700">course_id 🔑</text><text x="586" y="448" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="340" y1="456" x2="600" y2="456" stroke="#f0f2f4"/>
+          <text x="354" y="474" font-size="12.5">course_code</text><text x="586" y="474" font-size="12" text-anchor="end" fill="#5b6472">varchar(10) NN</text>
+          <line x1="340" y1="482" x2="600" y2="482" stroke="#f0f2f4"/>
+          <text x="354" y="500" font-size="12.5">course_title</text><text x="586" y="500" font-size="12" text-anchor="end" fill="#5b6472">varchar(150) NN</text>
+          <line x1="340" y1="508" x2="600" y2="508" stroke="#f0f2f4"/>
+          <text x="354" y="526" font-size="12.5">credits</text><text x="586" y="526" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+          <line x1="340" y1="534" x2="600" y2="534" stroke="#f0f2f4"/>
+          <text x="354" y="552" font-size="12.5" fill="#2c5f8a">department_id 🔗</text><text x="586" y="552" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+        </g>
+
+        <!-- ===== ENTITY: student ===== -->
+        <g>
+          <rect x="650" y="30" width="260" height="216" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="650" y="30" width="260" height="30" fill="#1a3a5c"/>
+          <text x="664" y="50" fill="#fff" font-size="13.5" font-weight="700">student</text>
+          <line x1="650" y1="60" x2="910" y2="60" stroke="#e3e7eb"/>
+          <text x="664" y="78" font-size="12.5" font-weight="700">student_id 🔑</text><text x="896" y="78" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="650" y1="86" x2="910" y2="86" stroke="#f0f2f4"/>
+          <text x="664" y="104" font-size="12.5">first_name</text><text x="896" y="104" font-size="12" text-anchor="end" fill="#5b6472">varchar(50) NN</text>
+          <line x1="650" y1="112" x2="910" y2="112" stroke="#f0f2f4"/>
+          <text x="664" y="130" font-size="12.5">last_name</text><text x="896" y="130" font-size="12" text-anchor="end" fill="#5b6472">varchar(50) NN</text>
+          <line x1="650" y1="138" x2="910" y2="138" stroke="#f0f2f4"/>
+          <text x="664" y="156" font-size="12.5">email</text><text x="896" y="156" font-size="12" text-anchor="end" fill="#5b6472">varchar(100) NN</text>
+          <line x1="650" y1="164" x2="910" y2="164" stroke="#f0f2f4"/>
+          <text x="664" y="182" font-size="12.5">date_of_birth</text><text x="896" y="182" font-size="12" text-anchor="end" fill="#5b6472">date</text>
+          <line x1="650" y1="190" x2="910" y2="190" stroke="#f0f2f4"/>
+          <text x="664" y="208" font-size="12.5">enrollment_date</text><text x="896" y="208" font-size="12" text-anchor="end" fill="#5b6472">date NN</text>
+          <line x1="650" y1="216" x2="910" y2="216" stroke="#f0f2f4"/>
+          <text x="664" y="234" font-size="12.5" fill="#2c5f8a">program_id 🔗</text><text x="896" y="234" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+        </g>
+
+        <!-- ===== ENTITY: course_offering ===== -->
+        <g>
+          <rect x="650" y="290" width="260" height="190" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="650" y="290" width="260" height="30" fill="#1a3a5c"/>
+          <text x="664" y="310" fill="#fff" font-size="13.5" font-weight="700">course_offering</text>
+          <line x1="650" y1="320" x2="910" y2="320" stroke="#e3e7eb"/>
+          <text x="664" y="338" font-size="12.5" font-weight="700">offering_id 🔑</text><text x="896" y="338" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="650" y1="346" x2="910" y2="346" stroke="#f0f2f4"/>
+          <text x="664" y="364" font-size="12.5" fill="#2c5f8a">course_id 🔗</text><text x="896" y="364" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+          <line x1="650" y1="372" x2="910" y2="372" stroke="#f0f2f4"/>
+          <text x="664" y="390" font-size="12.5" fill="#2c5f8a">instructor_id 🔗</text><text x="896" y="390" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+          <line x1="650" y1="398" x2="910" y2="398" stroke="#f0f2f4"/>
+          <text x="664" y="416" font-size="12.5" fill="#2c5f8a">semester_id 🔗</text><text x="896" y="416" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+          <line x1="650" y1="424" x2="910" y2="424" stroke="#f0f2f4"/>
+          <text x="664" y="442" font-size="12.5">room_number</text><text x="896" y="442" font-size="12" text-anchor="end" fill="#5b6472">varchar(10)</text>
+          <line x1="650" y1="450" x2="910" y2="450" stroke="#f0f2f4"/>
+          <text x="664" y="468" font-size="12.5">capacity</text><text x="896" y="468" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+        </g>
+
+        <!-- ===== ENTITY: enrollment ===== -->
+        <g>
+          <rect x="960" y="30" width="260" height="164" fill="#fff" stroke="#c7cfd8"/>
+          <rect x="960" y="30" width="260" height="30" fill="#1a3a5c"/>
+          <text x="974" y="50" fill="#fff" font-size="13.5" font-weight="700">enrollment</text>
+          <line x1="960" y1="60" x2="1220" y2="60" stroke="#e3e7eb"/>
+          <text x="974" y="78" font-size="12.5" font-weight="700">enrollment_id 🔑</text><text x="1206" y="78" font-size="12" text-anchor="end" fill="#5b6472">int</text>
+          <line x1="960" y1="86" x2="1220" y2="86" stroke="#f0f2f4"/>
+          <text x="974" y="104" font-size="12.5" fill="#2c5f8a">student_id 🔗</text><text x="1206" y="104" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+          <line x1="960" y1="112" x2="1220" y2="112" stroke="#f0f2f4"/>
+          <text x="974" y="130" font-size="12.5" fill="#2c5f8a">offering_id 🔗</text><text x="1206" y="130" font-size="12" text-anchor="end" fill="#5b6472">int NN</text>
+          <line x1="960" y1="138" x2="1220" y2="138" stroke="#f0f2f4"/>
+          <text x="974" y="156" font-size="12.5">enrollment_date</text><text x="1206" y="156" font-size="12" text-anchor="end" fill="#5b6472">date NN</text>
+          <line x1="960" y1="164" x2="1220" y2="164" stroke="#f0f2f4"/>
+          <text x="974" y="182" font-size="12.5">grade</text><text x="1206" y="182" font-size="12" text-anchor="end" fill="#5b6472">varchar(2)</text>
+        </g>
+
+      </svg>
+      <div class="legend">
+        <span>🔑 primary key</span>
+        <span>🔗 foreign key</span>
+        <span>NN — not null</span>
+        <span><span class="dot" style="background:#fff;border:1.3px solid #8a97a8;"></span> "many" end of a 1&nbsp;:&nbsp;M relationship</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="schema">
+    <h2><span class="num">02</span> Database Schema (SQL DDL)</h2>
+    <p class="section-intro">Each table below is defined with SQL data types sized to the attribute — <code>INT</code> for identifiers, <code>VARCHAR(n)</code> sized to the longest realistic value, and <code>DATE</code> for calendar fields — plus <code>PRIMARY KEY</code> and <code>FOREIGN KEY</code> constraints matching the relationships in the diagram above.</p>
+
+    <div class="schema-grid">
+
+      <div class="tbl-card">
+        <div class="tbl-head">department</div>
+        <pre><span class="kw">CREATE TABLE</span> department (
+    department_id   <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    department_name <span class="type">VARCHAR(100)</span> <span class="kw">NOT NULL</span>,
+    building_code    <span class="type">VARCHAR(10)</span>
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">semester</div>
+        <pre><span class="kw">CREATE TABLE</span> semester (
+    semester_id   <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    semester_name <span class="type">VARCHAR(20)</span> <span class="kw">NOT NULL</span>,
+    start_date    <span class="type">DATE</span> <span class="kw">NOT NULL</span>,
+    end_date      <span class="type">DATE</span> <span class="kw">NOT NULL</span>
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">program</div>
+        <pre><span class="kw">CREATE TABLE</span> program (
+    program_id    <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    program_name  <span class="type">VARCHAR(100)</span> <span class="kw">NOT NULL</span>,
+    degree_type   <span class="type">VARCHAR(20)</span>,
+    department_id <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    <span class="kw">FOREIGN KEY</span> (department_id) <span class="kw">REFERENCES</span> department(department_id)
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">instructor</div>
+        <pre><span class="kw">CREATE TABLE</span> instructor (
+    instructor_id <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    first_name    <span class="type">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,
+    last_name     <span class="type">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,
+    email         <span class="type">VARCHAR(100)</span> <span class="kw">NOT NULL UNIQUE</span>,
+    department_id <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    <span class="kw">FOREIGN KEY</span> (department_id) <span class="kw">REFERENCES</span> department(department_id)
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">course</div>
+        <pre><span class="kw">CREATE TABLE</span> course (
+    course_id     <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    course_code   <span class="type">VARCHAR(10)</span> <span class="kw">NOT NULL UNIQUE</span>,
+    course_title  <span class="type">VARCHAR(150)</span> <span class="kw">NOT NULL</span>,
+    credits       <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    department_id <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    <span class="kw">FOREIGN KEY</span> (department_id) <span class="kw">REFERENCES</span> department(department_id)
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">student</div>
+        <pre><span class="kw">CREATE TABLE</span> student (
+    student_id       <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    first_name       <span class="type">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,
+    last_name        <span class="type">VARCHAR(50)</span> <span class="kw">NOT NULL</span>,
+    email            <span class="type">VARCHAR(100)</span> <span class="kw">NOT NULL UNIQUE</span>,
+    date_of_birth    <span class="type">DATE</span>,
+    enrollment_date  <span class="type">DATE</span> <span class="kw">NOT NULL</span>,
+    program_id       <span class="type">INT</span>,
+    <span class="kw">FOREIGN KEY</span> (program_id) <span class="kw">REFERENCES</span> program(program_id)
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">course_offering</div>
+        <pre><span class="kw">CREATE TABLE</span> course_offering (
+    offering_id   <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    course_id     <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    instructor_id <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    semester_id   <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    room_number   <span class="type">VARCHAR(10)</span>,
+    capacity      <span class="type">INT</span>,
+    <span class="kw">FOREIGN KEY</span> (course_id)     <span class="kw">REFERENCES</span> course(course_id),
+    <span class="kw">FOREIGN KEY</span> (instructor_id) <span class="kw">REFERENCES</span> instructor(instructor_id),
+    <span class="kw">FOREIGN KEY</span> (semester_id)   <span class="kw">REFERENCES</span> semester(semester_id)
+);</pre>
+      </div>
+
+      <div class="tbl-card">
+        <div class="tbl-head">enrollment</div>
+        <pre><span class="kw">CREATE TABLE</span> enrollment (
+    enrollment_id   <span class="type">INT</span> <span class="pk-note">PRIMARY KEY</span> <span class="kw">AUTO_INCREMENT</span>,
+    student_id      <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    offering_id     <span class="type">INT</span> <span class="kw">NOT NULL</span>,
+    enrollment_date <span class="type">DATE</span> <span class="kw">NOT NULL</span>,
+    grade           <span class="type">VARCHAR(2)</span>,
+    <span class="kw">FOREIGN KEY</span> (student_id)  <span class="kw">REFERENCES</span> student(student_id),
+    <span class="kw">FOREIGN KEY</span> (offering_id) <span class="kw">REFERENCES</span> course_offering(offering_id)
+);</pre>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="relationships">
+    <h2><span class="num">03</span> Relationship Summary</h2>
+    <p class="section-intro">All relationships in this schema are one-to-many, enforced through foreign keys.</p>
+    <div class="ref-wrap">
+      <table class="ref">
+        <caption>Parent → Child (1 : M)</caption>
+        <thead>
+          <tr><th>Parent table</th><th>Child table</th><th>Foreign key</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>department</td><td>program</td><td>program.department_id</td></tr>
+          <tr><td>department</td><td>instructor</td><td>instructor.department_id</td></tr>
+          <tr><td>department</td><td>course</td><td>course.department_id</td></tr>
+          <tr><td>program</td><td>student</td><td>student.program_id</td></tr>
+          <tr><td>semester</td><td>course_offering</td><td>course_offering.semester_id</td></tr>
+          <tr><td>instructor</td><td>course_offering</td><td>course_offering.instructor_id</td></tr>
+          <tr><td>course</td><td>course_offering</td><td>course_offering.course_id</td></tr>
+          <tr><td>student</td><td>enrollment</td><td>enrollment.student_id</td></tr>
+          <tr><td>course_offering</td><td>enrollment</td><td>enrollment.offering_id</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    College Enrollment System — Relational Database Design &middot; ERD and SQL schema
+  </footer>
+
+</div>
+</body>
+</html>
