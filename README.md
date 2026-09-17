@@ -1,5 +1,5 @@
 # College Enrollment System — Database Design
-aaaaa
+aaaa
 A relational database design for a college enrollment system, created for the assignment:
 **"Create relational databases and tables using SQL for a college enrollment system."**
 
